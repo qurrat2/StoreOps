@@ -8,4 +8,5 @@ public interface IProductRepository : IRepository<Product>
     Task<bool> SkuExistsAsync(string sku, int? excludeId = null);
     Task<IReadOnlyList<Product>> GetLowStockAsync();
     Task<IReadOnlyList<Product>> GetByCategoryAsync(int categoryId);
+    Task<IReadOnlyList<Product>> GetByIdsAsync(IEnumerable<int> ids);
 }

@@ -1,15 +1,15 @@
-@page "/categories"
+@page "/customers"
 @rendermode InteractiveServer
-@inject ICategoryService CategoryService
+@inject ICustomerService CustomerService
 @inject NavigationManager Nav
 @inject IJSRuntime JS
 
-<PageTitle>Categories</PageTitle>
+<PageTitle>Customers</PageTitle>
 
 <div class="d-flex justify-content-between align-items-center mb-3">
-    <h1>Categories</h1>
+    <h1>Customers</h1>
     <button class="btn btn-primary" @onclick="GoToCreate">
-        <i class="bi bi-plus-lg"></i> New Category
+        <i class="bi bi-plus-lg"></i> New Customer
     </button>
 </div>
 
@@ -17,10 +17,10 @@
 {
     <p><em>Loading...</em></p>
 }
-else if (categories.Count == 0)
+else if (customers.Count == 0)
 {
     <div class="alert alert-secondary">
-        No categories yet. Click <strong>New Category</strong> to add one.
+        No customers yet. Click <strong>New Customer</strong> to add one.
     </div>
 }
 else
@@ -29,20 +29,23 @@ else
         <thead>
             <tr>
                 <th>Name</th>
-                <th>Description</th>
+                <th>Email</th>
+                <th>Phone</th>
+                <th>City</th>
                 <th>Status</th>
-                <th>Created</th>
                 <th style="width: 180px;">Actions</th>
             </tr>
         </thead>
         <tbody>
-            @foreach (var cat in PagedCategories)
+            @foreach (var c in PagedCustomers)
             {
                 <tr>
-                    <td>@cat.Name</td>
-                    <td>@(cat.Description ?? "—")</td>
+                    <td>@c.FullName</td>
+                    <td>@c.Email</td>
+                    <td>@(c.Phone ?? "—")</td>
+                    <td>@(c.City ?? "—")</td>
                     <td>
-                        @if (cat.IsActive)
+                        @if (c.IsActive)
                         {
                             <span class="badge bg-success">Active</span>
                         }
@@ -51,17 +54,16 @@ else
                             <span class="badge bg-secondary">Inactive</span>
                         }
                     </td>
-                    <td>@cat.CreatedAt.ToString("yyyy-MM-dd")</td>
                     <td>
-                        <button class="btn btn-sm btn-outline-primary me-1" @onclick="() => GoToEdit(cat.Id)">Edit</button>
-                        <button class="btn btn-sm btn-outline-danger" @onclick="() => DeleteAsync(cat.Id, cat.Name)">Delete</button>
+                        <button class="btn btn-sm btn-outline-primary me-1" @onclick="() => GoToEdit(c.Id)">Edit</button>
+                        <button class="btn btn-sm btn-outline-danger" @onclick="() => DeleteAsync(c.Id, c.FullName)">Delete</button>
                     </td>
                 </tr>
             }
         </tbody>
     </table>
 
-    <Pagination TotalItems="categories.Count" PageSize="PageSize" CurrentPage="currentPage" OnPageChange="ChangePage" />
+    <Pagination TotalItems="customers.Count" PageSize="PageSize" CurrentPage="currentPage" OnPageChange="ChangePage" />
 }
 
 @if (!string.IsNullOrEmpty(errorMessage))
@@ -71,40 +73,40 @@ else
 
 @code {
     private const int PageSize = 15;
-    private IReadOnlyList<CategoryDto> categories = [];
+    private IReadOnlyList<CustomerDto> customers = [];
     private int currentPage = 1;
     private bool loading = true;
     private string? errorMessage;
 
-    private IEnumerable<CategoryDto> PagedCategories =>
-        categories.Skip((currentPage - 1) * PageSize).Take(PageSize);
+    private IEnumerable<CustomerDto> PagedCustomers =>
+        customers.Skip((currentPage - 1) * PageSize).Take(PageSize);
 
     private void ChangePage(int page) => currentPage = page;
 
     protected override async Task OnInitializedAsync()
     {
-        await LoadCategoriesAsync();
+        await LoadCustomersAsync();
     }
 
-    private async Task LoadCategoriesAsync()
+    private async Task LoadCustomersAsync()
     {
         loading = true;
-        categories = await CategoryService.GetAllAsync(includeInactive: true);
-        var totalPages = Math.Max(1, (int)Math.Ceiling((double)categories.Count / PageSize));
+        customers = await CustomerService.GetAllAsync(includeInactive: true);
+        var totalPages = Math.Max(1, (int)Math.Ceiling((double)customers.Count / PageSize));
         if (currentPage > totalPages) currentPage = totalPages;
         loading = false;
     }
 
-    private void GoToCreate() => Nav.NavigateTo("/categories/create");
+    private void GoToCreate() => Nav.NavigateTo("/customers/create");
 
-    private void GoToEdit(int id) => Nav.NavigateTo($"/categories/{id}/edit");
+    private void GoToEdit(int id) => Nav.NavigateTo($"/customers/{id}/edit");
 
     private async Task DeleteAsync(int id, string name)
     {
-        var confirmed = await JS.InvokeAsync<bool>("confirm", $"Deactivate category '{name}'?");
+        var confirmed = await JS.InvokeAsync<bool>("confirm", $"Deactivate customer '{name}'?");
         if (!confirmed) return;
 
-        var result = await CategoryService.DeleteAsync(id);
+        var result = await CustomerService.DeleteAsync(id);
         if (result.IsFailure)
         {
             errorMessage = result.Error;
@@ -112,6 +114,6 @@ else
         }
 
         errorMessage = null;
-        await LoadCategoriesAsync();
+        await LoadCustomersAsync();
     }
 }

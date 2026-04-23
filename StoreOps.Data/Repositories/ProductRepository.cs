@@ -57,4 +57,15 @@ public class ProductRepository : Repository<Product>, IProductRepository
         if (!includeInactive) query= query.Where(p => p.IsActive);
         return await query.ToListAsync();
     }
+
+    public async Task<IReadOnlyList<Product>> GetByIdsAsync(IEnumerable<int> ids)
+    {
+        var idList = ids.Distinct().ToList();
+        using var context = await Factory.CreateDbContextAsync();
+        return await context.Products
+            .Where(p => idList.Contains(p.Id))
+            .Include(p => p.Category)
+            .AsNoTracking()
+            .ToListAsync();
+    }
 }

@@ -1,0 +1,156 @@
+@page "/customers/{Id:int}/edit"
+@rendermode InteractiveServer
+@inject ICustomerService CustomerService
+@inject NavigationManager Nav
+
+<PageTitle>Edit Customer</PageTitle>
+
+<h1>Edit Customer</h1>
+
+@if (loading)
+{
+    <p><em>Loading...</em></p>
+}
+else if (model is null)
+{
+    <div class="alert alert-warning">Customer not found.</div>
+    <a href="/customers" class="btn btn-secondary">Back to list</a>
+}
+else
+{
+    @if (!string.IsNullOrEmpty(errorMessage))
+    {
+        <div class="alert alert-danger">@errorMessage</div>
+    }
+
+    <CrudForm TModel="UpdateCustomerDto"
+              Model="model"
+              SubmitLabel="Save"
+              Submitting="submitting"
+              OnValidSubmit="HandleSubmit"
+              OnCancel="HandleCancel">
+
+        <div class="row">
+            <div class="col-md-6 mb-3">
+                <label class="form-label">First Name</label>
+                <InputText @bind-Value="model.FirstName" class="form-control" />
+                <ValidationMessage For="() => model.FirstName" class="text-danger" />
+            </div>
+            <div class="col-md-6 mb-3">
+                <label class="form-label">Last Name</label>
+                <InputText @bind-Value="model.LastName" class="form-control" />
+                <ValidationMessage For="() => model.LastName" class="text-danger" />
+            </div>
+        </div>
+
+        <div class="row">
+            <div class="col-md-7 mb-3">
+                <label class="form-label">Email</label>
+                <InputText @bind-Value="model.Email" type="email" class="form-control" />
+                <ValidationMessage For="() => model.Email" class="text-danger" />
+            </div>
+            <div class="col-md-5 mb-3">
+                <label class="form-label">Phone</label>
+                <InputText @bind-Value="model.Phone" class="form-control" />
+                <ValidationMessage For="() => model.Phone" class="text-danger" />
+            </div>
+        </div>
+
+        <div class="mb-3">
+            <label class="form-label">Address Line 1</label>
+            <InputText @bind-Value="model.AddressLine1" class="form-control" />
+            <ValidationMessage For="() => model.AddressLine1" class="text-danger" />
+        </div>
+
+        <div class="mb-3">
+            <label class="form-label">Address Line 2</label>
+            <InputText @bind-Value="model.AddressLine2" class="form-control" />
+            <ValidationMessage For="() => model.AddressLine2" class="text-danger" />
+        </div>
+
+        <div class="row">
+            <div class="col-md-5 mb-3">
+                <label class="form-label">City</label>
+                <InputText @bind-Value="model.City" class="form-control" />
+                <ValidationMessage For="() => model.City" class="text-danger" />
+            </div>
+            <div class="col-md-4 mb-3">
+                <label class="form-label">State</label>
+                <InputText @bind-Value="model.State" class="form-control" />
+                <ValidationMessage For="() => model.State" class="text-danger" />
+            </div>
+            <div class="col-md-3 mb-3">
+                <label class="form-label">Postal Code</label>
+                <InputText @bind-Value="model.PostalCode" class="form-control" />
+                <ValidationMessage For="() => model.PostalCode" class="text-danger" />
+            </div>
+        </div>
+
+        <div class="mb-3">
+            <label class="form-label">Country</label>
+            <InputText @bind-Value="model.Country" class="form-control" />
+            <ValidationMessage For="() => model.Country" class="text-danger" />
+        </div>
+
+        <div class="form-check mb-3">
+            <InputCheckbox @bind-Value="model.IsActive" class="form-check-input" id="isActive" />
+            <label class="form-check-label" for="isActive">Active</label>
+        </div>
+
+    </CrudForm>
+}
+
+@code {
+    [Parameter] public int Id { get; set; }
+
+    private UpdateCustomerDto? model;
+    private bool loading = true;
+    private bool submitting;
+    private string? errorMessage;
+
+    protected override async Task OnInitializedAsync()
+    {
+        var dto = await CustomerService.GetByIdAsync(Id);
+        if (dto is not null)
+        {
+            model = new UpdateCustomerDto
+            {
+                Id = dto.Id,
+                FirstName = dto.FirstName,
+                LastName = dto.LastName,
+                Email = dto.Email,
+                Phone = dto.Phone,
+                AddressLine1 = dto.AddressLine1,
+                AddressLine2 = dto.AddressLine2,
+                City = dto.City,
+                State = dto.State,
+                PostalCode = dto.PostalCode,
+                Country = dto.Country,
+                IsActive = dto.IsActive
+            };
+        }
+        loading = false;
+    }
+
+    private async Task HandleSubmit()
+    {
+        if (model is null) return;
+
+        submitting = true;
+        errorMessage = null;
+
+        var result = await CustomerService.UpdateAsync(model);
+
+        submitting = false;
+
+        if (result.IsFailure)
+        {
+            errorMessage = result.Error;
+            return;
+        }
+
+        Nav.NavigateTo("/customers");
+    }
+
+    private void HandleCancel() => Nav.NavigateTo("/customers");
+}
