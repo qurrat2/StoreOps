@@ -38,7 +38,7 @@ else
             </tr>
         </thead>
         <tbody>
-            @foreach (var p in products)
+            @foreach (var p in PagedProducts)
             {
                 <tr>
                     <td><code>@p.Sku</code></td>
@@ -73,6 +73,8 @@ else
             }
         </tbody>
     </table>
+
+    <Pagination TotalItems="products.Count" PageSize="PageSize" CurrentPage="currentPage" OnPageChange="ChangePage" />
 }
 
 @if (!string.IsNullOrEmpty(errorMessage))
@@ -81,9 +83,16 @@ else
 }
 
 @code {
+    private const int PageSize = 15;
     private IReadOnlyList<ProductDto> products = [];
+    private int currentPage = 1;
     private bool loading = true;
     private string? errorMessage;
+
+    private IEnumerable<ProductDto> PagedProducts =>
+        products.Skip((currentPage - 1) * PageSize).Take(PageSize);
+
+    private void ChangePage(int page) => currentPage = page;
 
     protected override async Task OnInitializedAsync()
     {
@@ -94,6 +103,8 @@ else
     {
         loading = true;
         products = await ProductService.GetAllAsync(includeInactive: true);
+        var totalPages = Math.Max(1, (int)Math.Ceiling((double)products.Count / PageSize));
+        if (currentPage > totalPages) currentPage = totalPages;
         loading = false;
     }
 
