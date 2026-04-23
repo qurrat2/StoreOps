@@ -1,0 +1,124 @@
+@page "/about"
+
+<PageTitle>About StoreOps</PageTitle>
+
+<div class="mb-4">
+    <h1>About StoreOps</h1>
+    <p class="lead">E-commerce admin panel — a hands-on study of production-grade .NET.</p>
+</div>
+
+<div class="row g-3 mb-4">
+    <div class="col-lg-7">
+        <div class="card h-100">
+            <div class="card-body">
+                <div class="d-flex align-items-center mb-3">
+                    <div style="width: 48px; height: 48px; border-radius: 50%; background: linear-gradient(135deg, #818cf8, #4f46e5); display: flex; align-items: center; justify-content: center; color: white; font-weight: 700; font-size: 1.25rem; letter-spacing: -0.02em;">
+                        QR
+                    </div>
+                    <div class="ms-3">
+                        <h5 class="mb-0">Qurrat ul Ain Rubab</h5>
+                        <div class="text-muted small">Product / Tech Lead · .NET Developer</div>
+                    </div>
+                </div>
+                <p class="mb-2">
+                    StoreOps is a personal portfolio project built to showcase production-grade .NET skills:
+                    layered architecture, clean separation of concerns, EF Core modelling, Blazor Server for interactive UI,
+                    and business rules that reflect real-world e-commerce (aggregate roots, snapshot pricing, stock reconciliation on cancel).
+                </p>
+                <p class="mb-0 text-muted">
+                    All code, data, and design decisions are my own. Built to learn, to demonstrate, and to iterate on
+                    as I move through interviews.
+                </p>
+            </div>
+        </div>
+    </div>
+    <div class="col-lg-5">
+        <div class="card h-100">
+            <div class="card-header"><strong>Tech Stack</strong></div>
+            <div class="card-body">
+                <table class="table table-sm mb-0">
+                    <tbody>
+                        <tr><td class="text-muted">UI</td><td>Blazor Server (.NET 10)</td></tr>
+                        <tr><td class="text-muted">Services</td><td>C# class library, <code>Result&lt;T&gt;</code> pattern, DTOs</td></tr>
+                        <tr><td class="text-muted">Data</td><td>EF Core 10, SQL Server LocalDB</td></tr>
+                        <tr><td class="text-muted">Patterns</td><td>Repository, Fluent API, <code>IDbContextFactory</code></td></tr>
+                        <tr><td class="text-muted">Charts</td><td>Chart.js (JS interop)</td></tr>
+                        <tr><td class="text-muted">Styling</td><td>Bootstrap 5 + custom theme</td></tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="row g-3 mb-4">
+    <div class="col-12">
+        <div class="card">
+            <div class="card-header"><strong>What This Project Demonstrates</strong></div>
+            <div class="card-body">
+                <div class="row g-3">
+                    <div class="col-md-6">
+                        <h6 class="mb-2">Architecture</h6>
+                        <ul class="small text-muted mb-0">
+                            <li>Four projects with strict one-way dependency flow: Web → Services → Data → Models</li>
+                            <li>Domain layer with zero EF dependencies (Fluent API via <code>IEntityTypeConfiguration&lt;T&gt;</code>)</li>
+                            <li>Per-layer DI extensions (<code>AddDataServices</code>, <code>AddApplicationServices</code>)</li>
+                        </ul>
+                    </div>
+                    <div class="col-md-6">
+                        <h6 class="mb-2">Business Logic</h6>
+                        <ul class="small text-muted mb-0">
+                            <li>Order aggregate: atomic stock deduction inside a DB transaction</li>
+                            <li>Snapshot pricing — order history never mutates when product prices change</li>
+                            <li>Stock restoration on cancel, status-transition FSM</li>
+                            <li>Auto-generated SKUs keyed on category</li>
+                        </ul>
+                    </div>
+                    <div class="col-md-6">
+                        <h6 class="mb-2">Patterns</h6>
+                        <ul class="small text-muted mb-0">
+                            <li><code>Result&lt;T&gt;</code> for predictable failures without exceptions</li>
+                            <li>DTOs at the UI boundary — entities never leak out of Services</li>
+                            <li>Generic + specific repositories; bulk <code>ExecuteDeleteAsync</code> for resets</li>
+                            <li>Layered validation: DataAnnotations on DTOs + server-side re-validation</li>
+                        </ul>
+                    </div>
+                    <div class="col-md-6">
+                        <h6 class="mb-2">UI / UX</h6>
+                        <ul class="small text-muted mb-0">
+                            <li>Reusable generic <code>CrudForm</code> component via <code>@@typeparam</code></li>
+                            <li>Live-computed totals on order creation</li>
+                            <li>Dashboard analytics: top products, weekly trend (dual-axis line chart)</li>
+                            <li>Client-side pagination (15/page) across all list pages</li>
+                        </ul>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="row g-3">
+    <div class="col-md-6">
+        <div class="card">
+            <div class="card-body d-flex justify-content-between align-items-center">
+                <div>
+                    <div class="text-muted small text-uppercase" style="letter-spacing: 0.05em;">GitHub</div>
+                    <div>github.com/qurrat2/StoreOps</div>
+                </div>
+                <a href="https://github.com/qurrat2/StoreOps" target="_blank" class="btn btn-outline-primary btn-sm">Visit &rarr;</a>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-6">
+        <div class="card">
+            <div class="card-body d-flex justify-content-between align-items-center">
+                <div>
+                    <div class="text-muted small text-uppercase" style="letter-spacing: 0.05em;">Contact</div>
+                    <div class="text-muted">Available on LinkedIn</div>
+                </div>
+                <button class="btn btn-outline-primary btn-sm" disabled>Add your link</button>
+            </div>
+        </div>
+    </div>
+</div>
