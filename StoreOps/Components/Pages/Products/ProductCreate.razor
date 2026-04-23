@@ -73,7 +73,7 @@
 
     <div class="mb-3">
         <label class="form-label">Category</label>
-        <InputSelect @bind-Value="model.CategoryId" class="form-select">
+        <InputSelect @bind-Value="model.CategoryId" @bind-Value:after="AutoPopulateSku" class="form-select">
             <option value="0">-- Select a category --</option>
             @foreach (var cat in categories)
             {
@@ -81,6 +81,7 @@
             }
         </InputSelect>
         <ValidationMessage For="() => model.CategoryId" class="text-danger" />
+        <div class="form-text">Selecting a category auto-fills the SKU (e.g. <code>ELEC-P1</code>). Edit it anytime.</div>
     </div>
 
 </CrudForm>
@@ -94,6 +95,14 @@
     protected override async Task OnInitializedAsync()
     {
         categories = (await CategoryService.GetAllAsync()).ToList();
+    }
+
+    private async Task AutoPopulateSku()
+    {
+        if (model.CategoryId > 0 && string.IsNullOrWhiteSpace(model.Sku))
+        {
+            model.Sku = await ProductService.GenerateSkuAsync(model.CategoryId);
+        }
     }
 
     private async Task HandleSubmit()

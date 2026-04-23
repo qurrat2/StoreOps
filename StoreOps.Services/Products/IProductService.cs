@@ -8,6 +8,7 @@ public interface IProductService
     Task<IReadOnlyList<ProductDto>> GetAllAsync(bool includeInactive = false);
     Task<IReadOnlyList<ProductDto>> GetByCategoryAsync(int categoryId);
     Task<IReadOnlyList<ProductDto>> GetLowStockAsync();
+    Task<string> GenerateSkuAsync(int categoryId);
     Task<Result<ProductDto>> CreateAsync(CreateProductDto dto);
     Task<Result<ProductDto>> UpdateAsync(UpdateProductDto dto);
     Task<Result<bool>> DeleteAsync(int id);

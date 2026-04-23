@@ -40,6 +40,24 @@ public class ProductService : IProductService
         return entities.Select(e => e.ToDto()).ToList();
     }
 
+    public async Task<string> GenerateSkuAsync(int categoryId)
+    {
+        var category = await _categories.GetByIdAsync(categoryId);
+        if (category is null) return string.Empty;
+
+        var prefix = BuildPrefix(category.Name);
+        var existing = await _products.GetByCategoryAsync(categoryId);
+
+        var nextNumber = existing
+            .Select(p => TryParseSequence(p.Sku, prefix))
+            .Where(n => n.HasValue)
+            .Select(n => n!.Value)
+            .DefaultIfEmpty(0)
+            .Max() + 1;
+
+        return $"{prefix}-P{nextNumber}";
+    }
+
     public async Task<Result<ProductDto>> CreateAsync(CreateProductDto dto)
     {
         var validation = Validate(dto.Sku, dto.Name, dto.Price, dto.CostPrice);
@@ -110,5 +128,21 @@ public class ProductService : IProductService
         if (price <= 0) return "Price must be greater than zero.";
         if (costPrice <= 0) return "Cost price must be greater than zero.";
         return null;
+    }
+
+    private static string BuildPrefix(string categoryName)
+    {
+        var firstWord = categoryName.Trim().Split(' ', StringSplitOptions.RemoveEmptyEntries).FirstOrDefault() ?? string.Empty;
+        var letters = new string(firstWord.Where(char.IsLetter).ToArray()).ToUpperInvariant();
+        if (string.IsNullOrEmpty(letters)) return "CAT";
+        return letters.Length >= 4 ? letters[..4] : letters;
+    }
+
+    private static int? TryParseSequence(string sku, string prefix)
+    {
+        var marker = $"{prefix}-P";
+        if (!sku.StartsWith(marker, StringComparison.OrdinalIgnoreCase)) return null;
+        var tail = sku[marker.Length..];
+        return int.TryParse(tail, out var n) ? n : null;
     }
 }
