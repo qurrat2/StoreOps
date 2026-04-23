@@ -1,0 +1,118 @@
+@page "/products/create"
+@rendermode InteractiveServer
+@inject IProductService ProductService
+@inject ICategoryService CategoryService
+@inject NavigationManager Nav
+
+<PageTitle>New Product</PageTitle>
+
+<h1>New Product</h1>
+
+@if (!string.IsNullOrEmpty(errorMessage))
+{
+    <div class="alert alert-danger">@errorMessage</div>
+}
+
+<CrudForm TModel="CreateProductDto"
+          Model="model"
+          SubmitLabel="Create"
+          Submitting="submitting"
+          OnValidSubmit="HandleSubmit"
+          OnCancel="HandleCancel">
+
+    <div class="row">
+        <div class="col-md-4 mb-3">
+            <label class="form-label">SKU</label>
+            <InputText @bind-Value="model.Sku" class="form-control" />
+            <ValidationMessage For="() => model.Sku" class="text-danger" />
+        </div>
+        <div class="col-md-8 mb-3">
+            <label class="form-label">Name</label>
+            <InputText @bind-Value="model.Name" class="form-control" />
+            <ValidationMessage For="() => model.Name" class="text-danger" />
+        </div>
+    </div>
+
+    <div class="mb-3">
+        <label class="form-label">Description</label>
+        <InputTextArea @bind-Value="model.Description" class="form-control" rows="3" />
+        <ValidationMessage For="() => model.Description" class="text-danger" />
+    </div>
+
+    <div class="row">
+        <div class="col-md-6 mb-3">
+            <label class="form-label">Price</label>
+            <InputNumber @bind-Value="model.Price" step="0.01" class="form-control" />
+            <ValidationMessage For="() => model.Price" class="text-danger" />
+        </div>
+        <div class="col-md-6 mb-3">
+            <label class="form-label">Cost Price</label>
+            <InputNumber @bind-Value="model.CostPrice" step="0.01" class="form-control" />
+            <ValidationMessage For="() => model.CostPrice" class="text-danger" />
+        </div>
+    </div>
+
+    <div class="row">
+        <div class="col-md-6 mb-3">
+            <label class="form-label">Stock Quantity</label>
+            <InputNumber @bind-Value="model.StockQuantity" class="form-control" />
+            <ValidationMessage For="() => model.StockQuantity" class="text-danger" />
+        </div>
+        <div class="col-md-6 mb-3">
+            <label class="form-label">Reorder Level</label>
+            <InputNumber @bind-Value="model.ReorderLevel" class="form-control" />
+            <ValidationMessage For="() => model.ReorderLevel" class="text-danger" />
+        </div>
+    </div>
+
+    <div class="mb-3">
+        <label class="form-label">Image URL</label>
+        <InputText @bind-Value="model.ImageUrl" class="form-control" placeholder="https://..." />
+        <ValidationMessage For="() => model.ImageUrl" class="text-danger" />
+    </div>
+
+    <div class="mb-3">
+        <label class="form-label">Category</label>
+        <InputSelect @bind-Value="model.CategoryId" class="form-select">
+            <option value="0">-- Select a category --</option>
+            @foreach (var cat in categories)
+            {
+                <option value="@cat.Id">@cat.Name</option>
+            }
+        </InputSelect>
+        <ValidationMessage For="() => model.CategoryId" class="text-danger" />
+    </div>
+
+</CrudForm>
+
+@code {
+    private CreateProductDto model = new();
+    private List<CategoryDto> categories = [];
+    private bool submitting;
+    private string? errorMessage;
+
+    protected override async Task OnInitializedAsync()
+    {
+        categories = (await CategoryService.GetAllAsync()).ToList();
+    }
+
+    private async Task HandleSubmit()
+    {
+        submitting = true;
+        errorMessage = null;
+
+        var result = await ProductService.CreateAsync(model);
+
+        submitting = false;
+
+        if (result.IsFailure)
+        {
+            errorMessage = result.Error;
+            return;
+        }
+
+        Nav.NavigateTo("/products");
+    }
+
+    private void HandleCancel() => Nav.NavigateTo("/products");
+}

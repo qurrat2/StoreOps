@@ -12,7 +12,7 @@
     <div class="alert alert-danger">@errorMessage</div>
 }
 
-<CategoryForm TModel="CreateCategoryDto"
+<CrudForm TModel="CreateCategoryDto"
               Model="model"
               SubmitLabel="Create"
               Submitting="submitting"
@@ -29,7 +29,7 @@
         <InputTextArea @bind-Value="model.Description" class="form-control" rows="3" />
         <ValidationMessage For="() => model.Description" class="text-danger" />
     </div>
-</CategoryForm>
+</CrudForm>
 
 @code {
     private CreateCategoryDto model = new();
