@@ -26,7 +26,7 @@ Lightweight e-commerce admin panel for small-to-mid-sized stores. Built as a han
 </tr>
 <tr>
 <td width="50%">
-<img src="docs/screenshots/products-list.png" alt="Products list" width="100%"/>
+<img src="docs/screenshots/product-list.png" alt="Products list" width="100%"/>
 <br/>
 <em><strong>Products list</strong> — Client-side pagination (15 per page), low-stock rows called out in red. Category name is denormalized onto the DTO via <code>Include()</code> to avoid N+1 queries. New-product SKUs are auto-generated from the selected category (e.g. <code>ELEC-P1</code>, <code>BOOK-P3</code>) with per-category sequence numbers.</em>
 </td>
