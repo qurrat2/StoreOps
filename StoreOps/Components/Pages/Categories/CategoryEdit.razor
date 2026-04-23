@@ -23,7 +23,7 @@ else
         <div class="alert alert-danger">@errorMessage</div>
     }
 
-    <CategoryForm TModel="UpdateCategoryDto"
+    <CrudForm TModel="UpdateCategoryDto"
                   Model="model"
                   SubmitLabel="Save"
                   Submitting="submitting"
@@ -45,7 +45,7 @@ else
             <InputCheckbox @bind-Value="model.IsActive" class="form-check-input" id="isActive" />
             <label class="form-check-label" for="isActive">Active</label>
         </div>
-    </CategoryForm>
+    </CrudForm>
 }
 
 @code {

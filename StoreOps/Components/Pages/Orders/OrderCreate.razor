@@ -1,0 +1,170 @@
+@page "/orders/create"
+@rendermode InteractiveServer
+@inject IOrderService OrderService
+@inject ICustomerService CustomerService
+@inject IProductService ProductService
+@inject NavigationManager Nav
+
+<PageTitle>New Order</PageTitle>
+
+<h1>New Order</h1>
+
+@if (!string.IsNullOrEmpty(errorMessage))
+{
+    <div class="alert alert-danger">@errorMessage</div>
+}
+
+@if (loading)
+{
+    <p><em>Loading...</em></p>
+}
+else
+{
+    <CrudForm TModel="CreateOrderDto"
+              Model="model"
+              SubmitLabel="Create Order"
+              Submitting="submitting"
+              OnValidSubmit="HandleSubmit"
+              OnCancel="HandleCancel">
+
+        <div class="row">
+            <div class="col-md-6 mb-3">
+                <label class="form-label">Customer</label>
+                <InputSelect @bind-Value="model.CustomerId" class="form-select">
+                    <option value="0">-- Select a customer --</option>
+                    @foreach (var c in customers)
+                    {
+                        <option value="@c.Id">@c.FullName (@c.Email)</option>
+                    }
+                </InputSelect>
+                <ValidationMessage For="() => model.CustomerId" class="text-danger" />
+            </div>
+        </div>
+
+        <h5 class="mt-3">Line Items</h5>
+        <table class="table">
+            <thead>
+                <tr>
+                    <th style="width: 45%;">Product</th>
+                    <th style="width: 15%;">Qty</th>
+                    <th class="text-end" style="width: 15%;">Unit Price</th>
+                    <th class="text-end" style="width: 15%;">Line Total</th>
+                    <th style="width: 10%;"></th>
+                </tr>
+            </thead>
+            <tbody>
+                @if (model.Items.Count == 0)
+                {
+                    <tr>
+                        <td colspan="5" class="text-center text-muted">No items yet. Click <em>Add Line Item</em> below.</td>
+                    </tr>
+                }
+                @foreach (var item in model.Items)
+                {
+                    var product = products.FirstOrDefault(p => p.Id == item.ProductId);
+                    var unitPrice = product?.Price ?? 0m;
+                    var lineTotal = unitPrice * item.Quantity;
+                    <tr @key="item">
+                        <td>
+                            <InputSelect @bind-Value="item.ProductId" class="form-select form-select-sm">
+                                <option value="0">-- Select --</option>
+                                @foreach (var p in products)
+                                {
+                                    <option value="@p.Id">@p.Name (@p.Sku) - Stock: @p.StockQuantity</option>
+                                }
+                            </InputSelect>
+                        </td>
+                        <td>
+                            <InputNumber @bind-Value="item.Quantity" class="form-control form-control-sm" min="1" />
+                        </td>
+                        <td class="text-end align-middle">@unitPrice.ToString("C")</td>
+                        <td class="text-end align-middle">@lineTotal.ToString("C")</td>
+                        <td class="text-center align-middle">
+                            <button type="button" class="btn btn-sm btn-outline-danger" @onclick="() => RemoveItem(item)" title="Remove">&times;</button>
+                        </td>
+                    </tr>
+                }
+            </tbody>
+        </table>
+
+        <button type="button" class="btn btn-outline-secondary mb-3" @onclick="AddItem">+ Add Line Item</button>
+
+        <div class="row">
+            <div class="col-md-6 mb-3">
+                <label class="form-label">Shipping</label>
+                <InputNumber @bind-Value="model.ShippingAmount" step="0.01" class="form-control" />
+                <ValidationMessage For="() => model.ShippingAmount" class="text-danger" />
+            </div>
+            <div class="col-md-6 mb-3">
+                <label class="form-label">Discount</label>
+                <InputNumber @bind-Value="model.DiscountAmount" step="0.01" class="form-control" />
+                <ValidationMessage For="() => model.DiscountAmount" class="text-danger" />
+            </div>
+        </div>
+
+        <div class="mb-3">
+            <label class="form-label">Notes</label>
+            <InputTextArea @bind-Value="model.Notes" class="form-control" rows="2" />
+            <ValidationMessage For="() => model.Notes" class="text-danger" />
+        </div>
+
+        <div class="card bg-light mb-3">
+            <div class="card-body">
+                <div class="d-flex justify-content-between"><span>Subtotal</span><strong>@Subtotal.ToString("C")</strong></div>
+                <div class="d-flex justify-content-between text-muted small"><span>+ Shipping</span><span>@model.ShippingAmount.ToString("C")</span></div>
+                <div class="d-flex justify-content-between text-muted small"><span>- Discount</span><span>@model.DiscountAmount.ToString("C")</span></div>
+                <hr class="my-2" />
+                <div class="d-flex justify-content-between fs-5"><span>Total</span><strong>@Total.ToString("C")</strong></div>
+            </div>
+        </div>
+
+    </CrudForm>
+}
+
+@code {
+    private CreateOrderDto model = new();
+    private List<CustomerDto> customers = [];
+    private List<ProductDto> products = [];
+    private bool loading = true;
+    private bool submitting;
+    private string? errorMessage;
+
+    private decimal Subtotal => model.Items.Sum(i =>
+    {
+        var p = products.FirstOrDefault(x => x.Id == i.ProductId);
+        return (p?.Price ?? 0m) * i.Quantity;
+    });
+
+    private decimal Total => Subtotal + model.ShippingAmount - model.DiscountAmount;
+
+    protected override async Task OnInitializedAsync()
+    {
+        customers = (await CustomerService.GetAllAsync()).ToList();
+        products = (await ProductService.GetAllAsync()).ToList();
+        loading = false;
+    }
+
+    private void AddItem() => model.Items.Add(new CreateOrderItemDto());
+
+    private void RemoveItem(CreateOrderItemDto item) => model.Items.Remove(item);
+
+    private async Task HandleSubmit()
+    {
+        submitting = true;
+        errorMessage = null;
+
+        var result = await OrderService.CreateAsync(model);
+
+        submitting = false;
+
+        if (result.IsFailure)
+        {
+            errorMessage = result.Error;
+            return;
+        }
+
+        Nav.NavigateTo($"/orders/{result.Value!.Id}");
+    }
+
+    private void HandleCancel() => Nav.NavigateTo("/orders");
+}

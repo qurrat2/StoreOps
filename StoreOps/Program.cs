@@ -1,5 +1,6 @@
 using StoreOps.Components;
 using StoreOps.Data;
+using StoreOps.Data.Seeding;
 using StoreOps.Services;
 
 var builder = WebApplication.CreateBuilder(args);
@@ -15,6 +16,11 @@ builder.Services.AddDataServices(connectionString);
 builder.Services.AddApplicationServices();
 
 var app = builder.Build();
+
+if (app.Environment.IsDevelopment())
+{
+    await DbSeeder.SeedAsync(app.Services);
+}
 
 // Configure the HTTP request pipeline.
 if (!app.Environment.IsDevelopment())

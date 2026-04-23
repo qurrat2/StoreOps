@@ -1,0 +1,113 @@
+@page "/orders"
+@rendermode InteractiveServer
+@using StoreOps.Models.Enums
+@inject IOrderService OrderService
+@inject NavigationManager Nav
+
+<PageTitle>Orders</PageTitle>
+
+<div class="d-flex justify-content-between align-items-center mb-3">
+    <h1>Orders</h1>
+    <button class="btn btn-primary" @onclick="GoToCreate">
+        <i class="bi bi-plus-lg"></i> New Order
+    </button>
+</div>
+
+@if (loading)
+{
+    <p><em>Loading...</em></p>
+}
+else if (orders.Count == 0)
+{
+    <div class="alert alert-secondary">
+        No orders yet. Click <strong>New Order</strong> to create one.
+    </div>
+}
+else
+{
+    <table class="table table-hover">
+        <thead>
+            <tr>
+                <th>Order #</th>
+                <th>Date</th>
+                <th>Customer</th>
+                <th>Status</th>
+                <th>Payment</th>
+                <th class="text-end">Total</th>
+                <th style="width: 100px;">Actions</th>
+            </tr>
+        </thead>
+        <tbody>
+            @foreach (var o in PagedOrders)
+            {
+                <tr>
+                    <td><code>@o.OrderNumber</code></td>
+                    <td>@o.OrderDate.ToString("yyyy-MM-dd HH:mm")</td>
+                    <td>@o.CustomerName</td>
+                    <td>@StatusBadge(o.Status)</td>
+                    <td>@PaymentBadge(o.PaymentStatus)</td>
+                    <td class="text-end">@o.TotalAmount.ToString("C")</td>
+                    <td>
+                        <button class="btn btn-sm btn-outline-primary" @onclick="() => GoToDetails(o.Id)">View</button>
+                    </td>
+                </tr>
+            }
+        </tbody>
+    </table>
+
+    <Pagination TotalItems="orders.Count" PageSize="PageSize" CurrentPage="currentPage" OnPageChange="ChangePage" />
+}
+
+@code {
+    private const int PageSize = 15;
+    private IReadOnlyList<OrderDto> orders = [];
+    private int currentPage = 1;
+    private bool loading = true;
+
+    private IEnumerable<OrderDto> PagedOrders =>
+        orders.Skip((currentPage - 1) * PageSize).Take(PageSize);
+
+    private void ChangePage(int page) => currentPage = page;
+
+    protected override async Task OnInitializedAsync()
+    {
+        orders = await OrderService.GetAllAsync(includeInactive: true);
+        loading = false;
+    }
+
+    private void GoToCreate() => Nav.NavigateTo("/orders/create");
+    private void GoToDetails(int id) => Nav.NavigateTo($"/orders/{id}");
+
+    private static RenderFragment StatusBadge(OrderStatus s) => builder =>
+    {
+        var (cls, text) = s switch
+        {
+            OrderStatus.Pending    => ("bg-warning text-dark", "Pending"),
+            OrderStatus.Processing => ("bg-info text-dark", "Processing"),
+            OrderStatus.Shipped    => ("bg-primary", "Shipped"),
+            OrderStatus.Delivered  => ("bg-success", "Delivered"),
+            OrderStatus.Cancelled  => ("bg-secondary", "Cancelled"),
+            _                      => ("bg-light text-dark", s.ToString())
+        };
+        builder.OpenElement(0, "span");
+        builder.AddAttribute(1, "class", $"badge {cls}");
+        builder.AddContent(2, text);
+        builder.CloseElement();
+    };
+
+    private static RenderFragment PaymentBadge(PaymentStatus s) => builder =>
+    {
+        var (cls, text) = s switch
+        {
+            PaymentStatus.Pending  => ("bg-warning text-dark", "Pending"),
+            PaymentStatus.Paid     => ("bg-success", "Paid"),
+            PaymentStatus.Failed   => ("bg-danger", "Failed"),
+            PaymentStatus.Refunded => ("bg-secondary", "Refunded"),
+            _                      => ("bg-light text-dark", s.ToString())
+        };
+        builder.OpenElement(0, "span");
+        builder.AddAttribute(1, "class", $"badge {cls}");
+        builder.AddContent(2, text);
+        builder.CloseElement();
+    };
+}
