@@ -117,8 +117,8 @@ Default connection string points at `Server=(localdb)\Projects;Database=StoreOps
 - [x] Seed data generator with dev-only "Reset Demo Data" button
 - [x] Modern slate theme — dark sidebar, light content area
 - [ ] ASP.NET Identity + role-based authorization
-- [ ] Deploy to Azure App Service (live demo URL)
 - [ ] Coupon / Payment / Inventory-transaction UIs (models and schema already in place)
+- [ ] Mobile app to receive critical alerts
 
 ## Branching
 
