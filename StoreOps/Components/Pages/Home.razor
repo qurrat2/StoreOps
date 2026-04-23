@@ -1,10 +1,326 @@
 @page "/"
+@rendermode InteractiveServer
+@using StoreOps.Models.Enums
+@using StoreOps.Data.Seeding
+@inject ICustomerService CustomerService
+@inject IProductService ProductService
+@inject IOrderService OrderService
+@inject IAnalyticsService AnalyticsService
+@inject NavigationManager Nav
+@inject IJSRuntime JS
+@inject IServiceProvider Services
+@inject IHostEnvironment HostEnvironment
+@implements IAsyncDisposable
 
-<PageTitle>StoreOps</PageTitle>
+<PageTitle>Dashboard</PageTitle>
 
-<h1>StoreOps</h1>
-<p class="lead">E-commerce admin dashboard</p>
-
-<div class="alert alert-info mt-3">
-    <strong>Welcome!</strong> Use the navigation menu on the left to manage categories, products, orders, and more.
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <h1>Dashboard</h1>
+    <div class="d-flex gap-2">
+        <button class="btn btn-primary" @onclick='() => Nav.NavigateTo("/orders/create")'>+ New Order</button>
+        <button class="btn btn-outline-primary" @onclick='() => Nav.NavigateTo("/products/create")'>+ New Product</button>
+        <button class="btn btn-outline-primary" @onclick='() => Nav.NavigateTo("/customers/create")'>+ New Customer</button>
+        @if (HostEnvironment.IsDevelopment())
+        {
+            <button class="btn btn-outline-danger" @onclick="ResetDemoData" disabled="@resetting" title="Wipes all data and reloads demo seed (dev only)">
+                @if (resetting)
+                {
+                    <span class="spinner-border spinner-border-sm me-1"></span>
+                }
+                Reset Demo Data
+            </button>
+        }
+    </div>
 </div>
+
+@if (loading)
+{
+    <p><em>Loading...</em></p>
+}
+else
+{
+    <div class="row g-3 mb-4">
+        <div class="col-md-3">
+            <div class="card stat-card stat-card-accent-indigo h-100">
+                <div class="card-body">
+                    <div class="stat-card-label">Orders</div>
+                    <div class="stat-card-value">@totalOrders</div>
+                    <div class="stat-card-meta">@pendingOrders pending · @processingOrders processing</div>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card stat-card stat-card-accent-emerald h-100">
+                <div class="card-body">
+                    <div class="stat-card-label">Revenue (Paid)</div>
+                    <div class="stat-card-value">@totalRevenue.ToString("C0")</div>
+                    <div class="stat-card-meta">from @paidOrderCount paid orders</div>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card stat-card stat-card-accent-sky h-100">
+                <div class="card-body">
+                    <div class="stat-card-label">Customers</div>
+                    <div class="stat-card-value">@totalCustomers</div>
+                    <div class="stat-card-meta">active customers</div>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card stat-card stat-card-accent-amber h-100">
+                <div class="card-body">
+                    <div class="stat-card-label">Products</div>
+                    <div class="stat-card-value">@totalProducts</div>
+                    <div class="stat-card-meta">@lowStock.Count low on stock</div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="row g-3 mb-4">
+        <div class="col-lg-7">
+            <div class="card h-100">
+                <div class="card-header d-flex justify-content-between align-items-center">
+                    <strong>Orders &amp; Revenue Trend</strong>
+                    <span class="small text-muted">last 12 weeks</span>
+                </div>
+                <div class="card-body">
+                    <div style="position: relative; height: 280px;">
+                        <canvas id="trendChart"></canvas>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="col-lg-5">
+            <div class="card h-100">
+                <div class="card-header d-flex justify-content-between align-items-center">
+                    <strong>Top Products</strong>
+                    <span class="small text-muted">last 30 days</span>
+                </div>
+                <div class="card-body">
+                    @if (topProducts.Count == 0)
+                    {
+                        <p class="text-muted mb-0">No sales in the last 30 days.</p>
+                    }
+                    else
+                    {
+                        <div style="position: relative; height: 280px;">
+                            <canvas id="topProductsChart"></canvas>
+                        </div>
+                    }
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="row g-3">
+        <div class="col-lg-5">
+            <div class="card h-100">
+                <div class="card-header d-flex justify-content-between align-items-center">
+                    <strong>Low Stock</strong>
+                    <a href="/products" class="small">All products &rarr;</a>
+                </div>
+                <div class="card-body p-0">
+                    @if (lowStock.Count == 0)
+                    {
+                        <p class="p-3 text-muted mb-0">No products are low on stock.</p>
+                    }
+                    else
+                    {
+                        <table class="table table-sm mb-0">
+                            <thead>
+                                <tr>
+                                    <th>SKU</th>
+                                    <th>Name</th>
+                                    <th class="text-end">Stock</th>
+                                    <th class="text-end">Reorder at</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                @foreach (var p in lowStock)
+                                {
+                                    <tr>
+                                        <td><code>@p.Sku</code></td>
+                                        <td>@p.Name</td>
+                                        <td class="text-end text-danger fw-bold">@p.StockQuantity</td>
+                                        <td class="text-end text-muted">@p.ReorderLevel</td>
+                                    </tr>
+                                }
+                            </tbody>
+                        </table>
+                    }
+                </div>
+            </div>
+        </div>
+        <div class="col-lg-7">
+            <div class="card h-100">
+                <div class="card-header d-flex justify-content-between align-items-center">
+                    <strong>Recent Orders</strong>
+                    <a href="/orders" class="small">All orders &rarr;</a>
+                </div>
+                <div class="card-body p-0">
+                    @if (recentOrders.Count == 0)
+                    {
+                        <p class="p-3 text-muted mb-0">No orders yet.</p>
+                    }
+                    else
+                    {
+                        <table class="table table-sm mb-0">
+                            <thead>
+                                <tr>
+                                    <th>Order #</th>
+                                    <th>Date</th>
+                                    <th>Customer</th>
+                                    <th>Status</th>
+                                    <th class="text-end">Total</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                @foreach (var o in recentOrders)
+                                {
+                                    <tr style="cursor: pointer;" @onclick='() => Nav.NavigateTo($"/orders/{o.Id}")'>
+                                        <td><code>@o.OrderNumber</code></td>
+                                        <td>@o.OrderDate.ToString("yyyy-MM-dd")</td>
+                                        <td>@o.CustomerName</td>
+                                        <td>@StatusBadge(o.Status)</td>
+                                        <td class="text-end">@o.TotalAmount.ToString("C")</td>
+                                    </tr>
+                                }
+                            </tbody>
+                        </table>
+                    }
+                </div>
+            </div>
+        </div>
+    </div>
+}
+
+@code {
+    private bool loading = true;
+    private bool resetting;
+    private bool chartsRendered;
+    private int totalCustomers;
+    private int totalProducts;
+    private int totalOrders;
+    private int pendingOrders;
+    private int processingOrders;
+    private int paidOrderCount;
+    private decimal totalRevenue;
+    private IReadOnlyList<ProductDto> lowStock = [];
+    private IReadOnlyList<OrderDto> recentOrders = [];
+    private IReadOnlyList<TopProductDto> topProducts = [];
+    private IReadOnlyList<TrendPointDto> trend = [];
+
+    protected override async Task OnInitializedAsync() => await LoadDataAsync();
+
+    private async Task LoadDataAsync()
+    {
+        var customersTask = CustomerService.GetAllAsync();
+        var productsTask = ProductService.GetAllAsync();
+        var lowStockTask = ProductService.GetLowStockAsync();
+        var ordersTask = OrderService.GetAllAsync(includeInactive: true);
+        var topTask = AnalyticsService.GetTopSellingProductsAsync(days: 30, count: 5);
+        var trendTask = AnalyticsService.GetWeeklyTrendAsync(weeks: 12);
+
+        var customers = await customersTask;
+        var products = await productsTask;
+        lowStock = await lowStockTask;
+        var orders = await ordersTask;
+        topProducts = await topTask;
+        trend = await trendTask;
+
+        totalCustomers = customers.Count;
+        totalProducts = products.Count;
+        totalOrders = orders.Count;
+        pendingOrders = orders.Count(o => o.Status == OrderStatus.Pending);
+        processingOrders = orders.Count(o => o.Status == OrderStatus.Processing);
+
+        var paid = orders.Where(o => o.PaymentStatus == PaymentStatus.Paid).ToList();
+        paidOrderCount = paid.Count;
+        totalRevenue = paid.Sum(o => o.TotalAmount);
+
+        recentOrders = orders.Take(5).ToList();
+        loading = false;
+    }
+
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        if (!loading && !chartsRendered)
+        {
+            await RenderChartsAsync();
+            chartsRendered = true;
+        }
+    }
+
+    private async Task RenderChartsAsync()
+    {
+        var trendLabels = trend.Select(p => p.Label).ToArray();
+        var trendOrders = trend.Select(p => p.OrderCount).ToArray();
+        var trendRevenue = trend.Select(p => p.Revenue).ToArray();
+
+        await JS.InvokeVoidAsync("storeOpsCharts.renderTrend",
+            "trendChart", trendLabels, trendOrders, trendRevenue);
+
+        if (topProducts.Count > 0)
+        {
+            var labels = topProducts.Select(p => p.ProductName).ToArray();
+            var quantities = topProducts.Select(p => p.TotalQuantity).ToArray();
+            await JS.InvokeVoidAsync("storeOpsCharts.renderTopProducts",
+                "topProductsChart", labels, quantities);
+        }
+    }
+
+    private async Task ResetDemoData()
+    {
+        var ok = await JS.InvokeAsync<bool>("confirm", "This will DELETE all categories, products, customers, and orders, then reload the demo seed. Continue?");
+        if (!ok) return;
+
+        resetting = true;
+        loading = true;
+        chartsRendered = false;
+        StateHasChanged();
+
+        try
+        {
+            await DbSeeder.ResetAndSeedAsync(Services);
+        }
+        finally
+        {
+            resetting = false;
+        }
+
+        await LoadDataAsync();
+        StateHasChanged();
+    }
+
+    public async ValueTask DisposeAsync()
+    {
+        try
+        {
+            await JS.InvokeVoidAsync("storeOpsCharts.destroy", "trendChart");
+            await JS.InvokeVoidAsync("storeOpsCharts.destroy", "topProductsChart");
+        }
+        catch
+        {
+            // JS context may already be gone on navigation — safe to ignore
+        }
+    }
+
+    private static RenderFragment StatusBadge(OrderStatus s) => builder =>
+    {
+        var (cls, text) = s switch
+        {
+            OrderStatus.Pending    => ("bg-warning text-dark", "Pending"),
+            OrderStatus.Processing => ("bg-info text-dark", "Processing"),
+            OrderStatus.Shipped    => ("bg-primary", "Shipped"),
+            OrderStatus.Delivered  => ("bg-success", "Delivered"),
+            OrderStatus.Cancelled  => ("bg-secondary", "Cancelled"),
+            _                      => ("bg-light text-dark", s.ToString())
+        };
+        builder.OpenElement(0, "span");
+        builder.AddAttribute(1, "class", $"badge {cls}");
+        builder.AddContent(2, text);
+        builder.CloseElement();
+    };
+}
