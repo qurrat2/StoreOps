@@ -1,0 +1,91 @@
+## .NET build outputs
+[Bb]in/
+[Oo]bj/
+[Oo]ut/
+[Dd]ebug/
+[Dd]ebugPublic/
+[Rr]elease/
+[Rr]eleases/
+x64/
+x86/
+[Aa][Rr][Mm]/
+[Aa][Rr][Mm]64/
+
+## IDE / editor
+.vs/
+.idea/
+.vscode/
+*.user
+*.userprefs
+*.suo
+*.userosscache
+*.sln.docstates
+
+## Build & debug artifacts
+[Ll]og/
+[Ll]ogs/
+*.log
+*.tlog
+*.pdb
+*.pgc
+*.pgd
+*.rsp
+
+## NuGet
+*.nupkg
+*.snupkg
+**/[Pp]ackages/*
+!**/[Pp]ackages/build/
+.nuget/
+project.lock.json
+project.fragment.lock.json
+
+## ReSharper / Rider
+_ReSharper*/
+*.[Rr]e[Ss]harper
+*.DotSettings.user
+
+## EF Core / SQL Server LocalDB
+# The .mdf/.ldf data files are per-machine — never commit.
+*.mdf
+*.ldf
+*.ndf
+
+## Local configuration & secrets — DO NOT commit
+# Development connection strings / API keys live here; use the
+# .example template in version control instead.
+appsettings.Development.json
+appsettings.Local.json
+appsettings.*.local.json
+secrets.json
+*.pfx
+*.key
+
+## Test results / coverage
+[Tt]est[Rr]esult*/
+[Bb]uild[Ll]og.*
+*.VisualState.xml
+TestResult.xml
+coverage*.xml
+coverage*.json
+
+## Publish output
+publish/
+PublishProfiles/*.pubxml.user
+
+## OS
+.DS_Store
+Thumbs.db
+desktop.ini
+
+## Node (if we add a JS build later)
+node_modules/
+
+## Personal scratch notes (not part of the project)
+StoreOps/guide.md
+StoreOps/dev plan.md
+**/notes.md
+**/scratch.md
+**/TODO.md
+
+## NOTE: EF Core migrations ARE source code — always commit them.

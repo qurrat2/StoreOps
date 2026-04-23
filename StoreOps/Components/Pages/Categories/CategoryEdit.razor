@@ -1,0 +1,96 @@
+@page "/categories/{Id:int}/edit"
+@rendermode InteractiveServer
+@inject ICategoryService CategoryService
+@inject NavigationManager Nav
+
+<PageTitle>Edit Category</PageTitle>
+
+<h1>Edit Category</h1>
+
+@if (loading)
+{
+    <p><em>Loading...</em></p>
+}
+else if (model is null)
+{
+    <div class="alert alert-warning">Category not found.</div>
+    <a href="/categories" class="btn btn-secondary">Back to list</a>
+}
+else
+{
+    @if (!string.IsNullOrEmpty(errorMessage))
+    {
+        <div class="alert alert-danger">@errorMessage</div>
+    }
+
+    <CategoryForm TModel="UpdateCategoryDto"
+                  Model="model"
+                  SubmitLabel="Save"
+                  Submitting="submitting"
+                  OnValidSubmit="HandleSubmit"
+                  OnCancel="HandleCancel">
+        <div class="mb-3">
+            <label class="form-label">Name</label>
+            <InputText @bind-Value="model.Name" class="form-control" />
+            <ValidationMessage For="() => model.Name" class="text-danger" />
+        </div>
+
+        <div class="mb-3">
+            <label class="form-label">Description</label>
+            <InputTextArea @bind-Value="model.Description" class="form-control" rows="3" />
+            <ValidationMessage For="() => model.Description" class="text-danger" />
+        </div>
+
+        <div class="form-check mb-3">
+            <InputCheckbox @bind-Value="model.IsActive" class="form-check-input" id="isActive" />
+            <label class="form-check-label" for="isActive">Active</label>
+        </div>
+    </CategoryForm>
+}
+
+@code {
+    [Parameter] public int Id { get; set; }
+
+    private UpdateCategoryDto? model;
+    private bool loading = true;
+    private bool submitting;
+    private string? errorMessage;
+
+    protected override async Task OnInitializedAsync()
+    {
+        var dto = await CategoryService.GetByIdAsync(Id);
+        if (dto is not null)
+        {
+            model = new UpdateCategoryDto
+            {
+                Id = dto.Id,
+                Name = dto.Name,
+                Description = dto.Description,
+                IsActive = dto.IsActive
+            };
+        }
+        loading = false;
+    }
+
+    private async Task HandleSubmit()
+    {
+        if (model is null) return;
+
+        submitting = true;
+        errorMessage = null;
+
+        var result = await CategoryService.UpdateAsync(model);
+
+        submitting = false;
+
+        if (result.IsFailure)
+        {
+            errorMessage = result.Error;
+            return;
+        }
+
+        Nav.NavigateTo("/categories");
+    }
+
+    private void HandleCancel() => Nav.NavigateTo("/categories");
+}

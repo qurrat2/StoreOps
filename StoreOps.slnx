@@ -1,0 +1,6 @@
+<Solution>
+  <Project Path="StoreOps/StoreOps.csproj" />
+  <Project Path="StoreOps.Models/StoreOps.Models.csproj" />
+  <Project Path="StoreOps.Data/StoreOps.Data.csproj" />
+  <Project Path="StoreOps.Services/StoreOps.Services.csproj" />
+</Solution>

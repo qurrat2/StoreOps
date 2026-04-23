@@ -1,0 +1,58 @@
+@page "/categories/create"
+@rendermode InteractiveServer
+@inject ICategoryService CategoryService
+@inject NavigationManager Nav
+
+<PageTitle>New Category</PageTitle>
+
+<h1>New Category</h1>
+
+@if (!string.IsNullOrEmpty(errorMessage))
+{
+    <div class="alert alert-danger">@errorMessage</div>
+}
+
+<CategoryForm TModel="CreateCategoryDto"
+              Model="model"
+              SubmitLabel="Create"
+              Submitting="submitting"
+              OnValidSubmit="HandleSubmit"
+              OnCancel="HandleCancel">
+    <div class="mb-3">
+        <label class="form-label">Name</label>
+        <InputText @bind-Value="model.Name" class="form-control" />
+        <ValidationMessage For="() => model.Name" class="text-danger" />
+    </div>
+
+    <div class="mb-3">
+        <label class="form-label">Description</label>
+        <InputTextArea @bind-Value="model.Description" class="form-control" rows="3" />
+        <ValidationMessage For="() => model.Description" class="text-danger" />
+    </div>
+</CategoryForm>
+
+@code {
+    private CreateCategoryDto model = new();
+    private bool submitting;
+    private string? errorMessage;
+
+    private async Task HandleSubmit()
+    {
+        submitting = true;
+        errorMessage = null;
+
+        var result = await CategoryService.CreateAsync(model);
+
+        submitting = false;
+
+        if (result.IsFailure)
+        {
+            errorMessage = result.Error;
+            return;
+        }
+
+        Nav.NavigateTo("/categories");
+    }
+
+    private void HandleCancel() => Nav.NavigateTo("/categories");
+}
