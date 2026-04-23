@@ -1,0 +1,119 @@
+@page "/products"
+@rendermode InteractiveServer
+@inject IProductService ProductService
+@inject NavigationManager Nav
+@inject IJSRuntime JS
+
+<PageTitle>Products</PageTitle>
+
+<div class="d-flex justify-content-between align-items-center mb-3">
+    <h1>Products</h1>
+    <button class="btn btn-primary" @onclick="GoToCreate">
+        <i class="bi bi-plus-lg"></i> New Product
+    </button>
+</div>
+
+@if (loading)
+{
+    <p><em>Loading...</em></p>
+}
+else if (products.Count == 0)
+{
+    <div class="alert alert-secondary">
+        No products yet. Click <strong>New Product</strong> to add one.
+    </div>
+}
+else
+{
+    <table class="table table-hover">
+        <thead>
+            <tr>
+                <th>SKU</th>
+                <th>Name</th>
+                <th>Category</th>
+                <th class="text-end">Price</th>
+                <th class="text-end">Stock</th>
+                <th>Status</th>
+                <th style="width: 180px;">Actions</th>
+            </tr>
+        </thead>
+        <tbody>
+            @foreach (var p in products)
+            {
+                <tr>
+                    <td><code>@p.Sku</code></td>
+                    <td>@p.Name</td>
+                    <td>@p.CategoryName</td>
+                    <td class="text-end">@p.Price.ToString("C")</td>
+                    <td class="text-end">
+                        @if (p.StockQuantity <= p.ReorderLevel)
+                        {
+                            <span class="text-danger fw-bold">@p.StockQuantity</span>
+                        }
+                        else
+                        {
+                            @p.StockQuantity
+                        }
+                    </td>
+                    <td>
+                        @if (p.IsActive)
+                        {
+                            <span class="badge bg-success">Active</span>
+                        }
+                        else
+                        {
+                            <span class="badge bg-secondary">Inactive</span>
+                        }
+                    </td>
+                    <td>
+                        <button class="btn btn-sm btn-outline-primary me-1" @onclick="() => GoToEdit(p.Id)">Edit</button>
+                        <button class="btn btn-sm btn-outline-danger" @onclick="() => DeleteAsync(p.Id, p.Name)">Delete</button>
+                    </td>
+                </tr>
+            }
+        </tbody>
+    </table>
+}
+
+@if (!string.IsNullOrEmpty(errorMessage))
+{
+    <div class="alert alert-danger">@errorMessage</div>
+}
+
+@code {
+    private IReadOnlyList<ProductDto> products = [];
+    private bool loading = true;
+    private string? errorMessage;
+
+    protected override async Task OnInitializedAsync()
+    {
+        await LoadProductsAsync();
+    }
+
+    private async Task LoadProductsAsync()
+    {
+        loading = true;
+        products = await ProductService.GetAllAsync(includeInactive: true);
+        loading = false;
+    }
+
+    private void GoToCreate() => Nav.NavigateTo("/products/create");
+
+    private void GoToEdit(int id) => Nav.NavigateTo($"/products/{id}/edit");
+
+    private async Task DeleteAsync(int id, string name)
+    {
+        var confirmed = await JS.InvokeAsync<bool>("confirm", $"Deactivate product '{name}'?");
+        if (!confirmed) return;
+
+        var result = await ProductService.DeleteAsync(id);
+        if (result.IsFailure)
+        {
+            errorMessage = result.Error;
+            return;
+        }
+
+        errorMessage = null;
+        await LoadProductsAsync();
+    }
+}
